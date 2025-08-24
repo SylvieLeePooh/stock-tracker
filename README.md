@@ -1,2 +1,0 @@
-# stock-tracker
-stock-tracker
