@@ -1,0 +1,45 @@
+name: Stock Tracker
+
+on:
+  schedule:
+    - cron: "10 22 * * 1-5"   # 週一至週五，UTC 22:10 (台灣早上 06:10)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tracker
+        env:
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          EMAIL_TO:   ${{ secrets.EMAIL_TO }}
+        run: python stock_tracker.py
+
+      - name: Commit & push CSV if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- stock_data.csv; then
+            echo "No changes to commit."
+          else
+            git add stock_data.csv
+            git commit -m "Update stock data"
+            git push
+          fi
